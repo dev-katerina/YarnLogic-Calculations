@@ -1,1 +1,1 @@
-# YarnLogic-settlement
+# YarnLogic-settlement (Расчетный сервис)
