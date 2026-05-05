@@ -1,15 +1,9 @@
-from db.neo4j import get_data
+from db.neo4j import driver
+from service.graph_manager import GraphManager
 import asyncio
 import logging
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def main():
-    logger.info("Starting application...")
-    num = await get_data()
-    logger.info(f"Data from Neo4j: {num}")
-    logger.info("Application finished.")
-
-if __name__ == "__main__":
-    asyncio.run(main())
