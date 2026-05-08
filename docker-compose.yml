@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  calculator:
+    build: .
+    depends_on:
+      - graphdb
+    volumes:
+      - ./src:/app
+  
+
+  graphdb:
+    image: neo4j:5
+    ports:
+      - "7474:7474"  # Web UI
+      - "7687:7687"  # Bolt (для драйверов)
+    environment:
+      - NEO4J_AUTH=neo4j/testpassword
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
