@@ -1,2 +1,3 @@
 neo4j
+pydantic
 pydantic_settings
