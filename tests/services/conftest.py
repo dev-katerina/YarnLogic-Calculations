@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
+from sqlalchemy.ext.asyncio import AsyncSession
 from service.graph_manager import GraphManager
+from service.db_manager import DBManager
 
 
 @pytest.fixture
@@ -29,7 +31,7 @@ def graph_manager(mock_driver):
 
 @pytest.fixture
 def mock_db():
-    return MagicMock(spec=["execute", "add", "commit", "refresh"])
+    return MagicMock(spec=AsyncSession)
 
 
 @pytest.fixture
