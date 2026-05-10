@@ -1,3 +1,7 @@
 neo4j
 pydantic
 pydantic_settings
+fastapi
+sqlalchemy
+asyncpg
+uvicorn

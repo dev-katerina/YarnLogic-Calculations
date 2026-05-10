@@ -7,6 +7,12 @@ services:
       - graphdb
     volumes:
       - ./src:/app
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
   
 
   graphdb:
@@ -20,7 +26,29 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
     restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15
+    restart: always
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data      
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+      start_period: 5s
+    networks:
+      - app-network
 
 volumes:
   neo4j_data:
   neo4j_logs:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge
