@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
-from service.graph_manager import GraphManager
-from service.db_manager import DBManager
+from repositories.graph_manager import GraphManager
+from repositories.db_manager import DBManager
 
 
 @pytest.fixture

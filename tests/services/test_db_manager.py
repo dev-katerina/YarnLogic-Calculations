@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from service.db_manager import DBManager
+from repositories.db_manager import DBManager
 from models.postgres import Tool, StitchType, RelationType
 
 
