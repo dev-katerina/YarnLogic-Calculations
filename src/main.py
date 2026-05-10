@@ -4,7 +4,6 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from db import neo4j, postgres
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -18,9 +17,7 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Shutting down the application...")
-    await asyncio.gather(
-        neo4j.close_driver(),
-        postgres.close_db()
-    )
+    await asyncio.gather(neo4j.close_driver(), postgres.close_db())
+
 
 app = FastAPI(lifespan=lifespan)

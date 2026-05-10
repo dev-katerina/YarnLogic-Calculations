@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Config(BaseSettings):
     graphdb_host: str = "graphdb"
     graphdb_port: int = 7687
@@ -11,5 +12,6 @@ class Config(BaseSettings):
     postgres_host: str = "postgres"
     postgres_port: str = "5432"
     postgres_db: str = "yarnlogic"
+
 
 settings = Config()

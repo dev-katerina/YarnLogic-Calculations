@@ -15,6 +15,7 @@ DATABASE_URL = f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgre
 engine: AsyncEngine | None = None
 SessionLocal: async_sessionmaker[AsyncSession] | None = None
 
+
 def init_db() -> None:
     global engine, SessionLocal
 
@@ -30,6 +31,7 @@ def init_db() -> None:
         class_=AsyncSession,
     )
     logger.info("PostgreSQL database initialized")
+
 
 async def close_db() -> None:
     if engine:
