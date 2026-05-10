@@ -1,6 +1,7 @@
 from core.errors import ErrorMessages
 from models.service import Density, ConversionKoefficient
 
+
 class Calculator:
     @staticmethod
     def calculate_density(
@@ -16,13 +17,20 @@ class Calculator:
             loops=loops / width,
             rows=rows / height,
         )
-    
+
     @staticmethod
-    def calculate_density_conversion(original_v: Density, target_v:Density) -> ConversionKoefficient:
-        if original_v.loops <= 0 or original_v.rows <= 0 or target_v.loops <= 0 or target_v.rows <= 0:
+    def calculate_density_conversion(
+        original_v: Density, target_v: Density
+    ) -> ConversionKoefficient:
+        if (
+            original_v.loops <= 0
+            or original_v.rows <= 0
+            or target_v.loops <= 0
+            or target_v.rows <= 0
+        ):
             raise ValueError(ErrorMessages.INVALID_PARAMETERS)
 
         return ConversionKoefficient(
             loops_k=target_v.loops / original_v.loops,
-            rows_k=target_v.rows / original_v.rows 
+            rows_k=target_v.rows / original_v.rows,
         )
