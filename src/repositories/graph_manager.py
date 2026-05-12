@@ -19,6 +19,15 @@ class GraphManager:
             result = await session.run("CREATE (n:Node $props)", props=node_data)
             record = await result.single()
             return record
+        
+    async def get_node(self, node_id: UUID) -> Dict[str, Any]:
+        async with self.driver.session() as session:
+            result = await session.run(
+                "MATCH (n:Node {id: $node_id}) RETURN n", node_id=node_id
+            )
+            record = await result.single()
+            return record
+        pass
 
     async def add_relationship(
         self, from_id: UUID, to_id: UUID, properties: Relation
@@ -64,6 +73,14 @@ class GraphManager:
             await session.run(
                 "MATCH ()-[r]->() WHERE id(r) = $relationship_id DELETE r",
                 relationship_id=relationship_id,
+            )
+            return True
+        pass
+
+    async def delete_graph(self, graph_id: UUID) -> bool:
+        async with self.driver.session() as session:
+            await session.run(
+                "MATCH (n:Node {graph_id: $graph_id}) DETACH DELETE n", graph_id=graph_id
             )
             return True
         pass
