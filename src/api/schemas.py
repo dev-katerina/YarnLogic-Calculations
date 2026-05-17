@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 
 from uuid import UUID
 
@@ -8,7 +8,7 @@ from uuid import UUID
 
 class Tool(BaseModel):
     name: str = Field(..., title="Tool name", description="Unique name of the tool.")
-    description: Optional[str] = Field(None, title="Tool description", description="Optional human-readable description of the tool.")
+    description: str | None = Field(None, title="Tool description", description="Optional human-readable description of the tool.")
 
 
 """Петли"""
@@ -16,7 +16,7 @@ class Tool(BaseModel):
 
 class StitchType(BaseModel):
     name: str = Field(..., title="Stitch type name", description="Unique identifier for the stitch type.")
-    description: Optional[str] = Field(None, title="Stitch type description", description="Optional human-readable description of this stitch type.")
+    description: str | None = Field(None, title="Stitch type description", description="Optional human-readable description of this stitch type.")
 
 
 class CreateStitch(BaseModel):
@@ -34,7 +34,7 @@ class ReadStitch(CreateStitch):
 
 class RelationType(BaseModel):
     name: str = Field(..., title="Relation type name", description="Unique identifier for the relation type.")
-    description: Optional[str] = Field(None, title="Relation type description", description="Optional human-readable description of this relation type.")
+    description: str | None = Field(None, title="Relation type description", description="Optional human-readable description of this relation type.")
 
 
 class CreateRelation(BaseModel):
