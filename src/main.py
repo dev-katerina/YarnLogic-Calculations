@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="YarnLogic Calculations API",
     description="API for managing knitting patterns, stitches, relations, and tools.",
-    version="0.1.0",
     lifespan=lifespan,
 )
 
