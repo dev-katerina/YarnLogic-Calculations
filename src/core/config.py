@@ -12,6 +12,7 @@ class Config(BaseSettings):
     postgres_host: str = "postgres"
     postgres_port: str = "5432"
     postgres_db: str = "yarnlogic"
+    postgres_schema: str = "yarnlogic_calculate"
 
 
 settings = Config()
