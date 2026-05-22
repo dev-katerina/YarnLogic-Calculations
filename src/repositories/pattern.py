@@ -36,15 +36,15 @@ class PatternRepositoryPostgres(PatternRepository):
         self.db = db
 
     async def get_all(self) -> List[Pattern]:
-        result = await self.db.execute("SELECT * FROM Pattern")
+        result = await self.db.select(Pattern)
         return result.scalars().all()
     
     async def get_by_id(self, Pattern_id: UUID) -> Pattern:
-        result = await self.db.execute("SELECT * FROM Pattern WHERE id = :id", {"id": Pattern_id})
+        result = await self.db.select(Pattern).where(Pattern.id == Pattern_id)
         return result.scalar_one_or_none()
     
     async def get_by_name(self, name: str) -> Pattern:
-        result = await self.db.execute("SELECT * FROM Pattern WHERE name = :name", {"name": name})
+        result = await self.db.select(Pattern).where(Pattern.name == name)
         return result.scalar_one_or_none()
     
     async def create(self, Pattern: Pattern):
@@ -59,7 +59,7 @@ class PatternRepositoryPostgres(PatternRepository):
         return Pattern
 
     async def delete(self, Pattern_id: UUID):
-        result = await self.db.execute("SELECT * FROM Pattern WHERE id = :id", {"id": Pattern_id})
+        result = await self.db.select(Pattern).where(Pattern.id == Pattern_id)
         Pattern = result.scalar_one_or_none()
         if Pattern:
             await self.db.delete(Pattern)
