@@ -12,7 +12,7 @@ class PatternRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, Pattern_id: UUID) -> Pattern:
+    async def get_by_id(self, pattern_id: UUID) -> Pattern:
         pass
     
     @abstractmethod
@@ -20,15 +20,15 @@ class PatternRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, Pattern: Pattern):
+    async def create(self, pattern: Pattern) -> Pattern:
         pass
 
     @abstractmethod
-    async def update(self, Pattern: Pattern):
+    async def update(self, pattern: Pattern) -> Pattern:
         pass
 
     @abstractmethod
-    async def delete(self, Pattern_id: UUID):
+    async def delete(self, pattern_id: UUID):
         pass
 
 class PatternRepositoryPostgres(PatternRepository):
@@ -39,28 +39,28 @@ class PatternRepositoryPostgres(PatternRepository):
         result = await self.db.select(Pattern)
         return result.scalars().all()
     
-    async def get_by_id(self, Pattern_id: UUID) -> Pattern:
-        result = await self.db.select(Pattern).where(Pattern.id == Pattern_id)
+    async def get_by_id(self, pattern_id: UUID) -> Pattern:
+        result = await self.db.select(Pattern).where(Pattern.id == pattern_id)
         return result.scalar_one_or_none()
     
     async def get_by_name(self, name: str) -> Pattern:
         result = await self.db.select(Pattern).where(Pattern.name == name)
         return result.scalar_one_or_none()
     
-    async def create(self, Pattern: Pattern):
-        self.db.add(Pattern)
+    async def create(self, pattern: Pattern) -> Pattern:
+        self.db.add(pattern)
         await self.db.commit()
-        await self.db.refresh(Pattern)
-        return Pattern
+        await self.db.refresh(pattern)
+        return pattern
     
-    async def update(self, Pattern: Pattern):
+    async def update(self, pattern: Pattern) -> Pattern:
         await self.db.commit()
-        await self.db.refresh(Pattern)
-        return Pattern
+        await self.db.refresh(pattern)
+        return pattern
 
-    async def delete(self, Pattern_id: UUID):
-        result = await self.db.select(Pattern).where(Pattern.id == Pattern_id)
-        Pattern = result.scalar_one_or_none()
-        if Pattern:
-            await self.db.delete(Pattern)
+    async def delete(self, pattern_id: UUID):
+        result = await self.db.select(Pattern).where(Pattern.id == pattern_id)
+        pattern = result.scalar_one_or_none()
+        if pattern:
+            await self.db.delete(pattern)
             await self.db.commit()

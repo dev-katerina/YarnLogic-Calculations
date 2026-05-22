@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS yarnlogic_calculate;
+\c yarnlogic_calculate;
 
 CREATE SCHEMA IF NOT EXISTS yarnlogic_calculate;
 
@@ -19,6 +19,6 @@ CREATE TABLE yarnlogic_calculate.tool (
 );
 
 CREATE TABLE yarnlogic_calculate.pattern (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name TEXT
 );
