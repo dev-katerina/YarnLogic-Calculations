@@ -16,11 +16,11 @@ class ToolRepository(ABC):
             pass
 
         @abstractmethod
-        async def create(self, obj: Tool) -> None:
+        async def create(self, obj: Tool) -> Tool:
             pass
 
         @abstractmethod
-        async def update(self, obj: Tool) -> None:
+        async def update(self, obj: Tool) -> Tool:
             pass
 
         @abstractmethod
@@ -39,14 +39,14 @@ class ToolRepositoryPostgres(ToolRepository):
             result = await self.db.select(Tool).where(Tool.name == name)
             return result.scalar_one_or_none()
         
-        async def create(self, obj: Tool) -> None:
+        async def create(self, obj: Tool) -> Tool:
             self.db.add(obj)
-            await self.db.commit()
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
-        async def update(self, obj: Tool) -> None:
-            await self.db.commit()
+        async def update(self, obj: Tool) -> Tool:
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
@@ -55,4 +55,4 @@ class ToolRepositoryPostgres(ToolRepository):
             obj = result.scalar_one_or_none()
             if obj:
                 await self.db.delete(obj)
-                await self.db.commit()
+                await self.db.flash()

@@ -41,12 +41,12 @@ class StitchTypeRepositoryPostgres(StitchTypeRepository):
         
         async def create(self, obj: StitchType) -> None:
             self.db.add(obj)
-            await self.db.commit()
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
         async def update(self, obj: StitchType) -> None:
-            await self.db.commit()
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
@@ -55,4 +55,4 @@ class StitchTypeRepositoryPostgres(StitchTypeRepository):
             obj = result.scalar_one_or_none()
             if obj:
                 await self.db.delete(obj)
-                await self.db.commit()
+                await self.db.flash()

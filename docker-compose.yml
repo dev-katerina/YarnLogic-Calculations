@@ -26,6 +26,8 @@ services:
       - .env
     networks:
       - app-network
+    volumes:
+      - ./tests:/app/tests
 
   graphdb:
     image: neo4j:5

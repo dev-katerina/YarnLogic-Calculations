@@ -39,12 +39,12 @@ class RelationTypeRepositoryPostgres(RelationTypeRepository):
         
         async def create(self, obj: RelationType) -> None:
             self.db.add(obj)
-            await self.db.commit()
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
         async def update(self, obj: RelationType) -> None:
-            await self.db.commit()
+            await self.db.flash()
             await self.db.refresh(obj)
             return obj
         
@@ -53,4 +53,4 @@ class RelationTypeRepositoryPostgres(RelationTypeRepository):
             obj = result.scalar_one_or_none()
             if obj:
                 await self.db.delete(obj)
-                await self.db.commit()
+                await self.db.flash()
