@@ -4,7 +4,12 @@ services:
   calculator:
     build: .
     depends_on:
-      - graphdb
+      graphdb:
+        condition: service_started
+      postgres:
+         condition: service_healthy
+      tests: 
+        condition: service_completed_successfully
     volumes:
       - ./src:/app
     env_file:
@@ -20,7 +25,7 @@ services:
       context: .
       dockerfile: tests/Dockerfile
     depends_on:
-      test-db: 
+      postgres:
         condition: service_healthy
     env_file:
       - .env
@@ -28,6 +33,7 @@ services:
       - app-network
     volumes:
       - ./tests:/app/tests
+      - ./src:/app/src
 
   graphdb:
     image: neo4j:5
@@ -49,21 +55,6 @@ services:
     env_file: .env
     volumes:
       - pgdata:/var/lib/postgresql/data    
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql  
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      retries: 5
-      timeout: 5s
-      start_period: 5s
-    networks:
-      - app-network
-
-  test-db:
-    image: postgres:15
-    restart: always
-    env_file: tests/.env
-    volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql  
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]

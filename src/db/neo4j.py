@@ -23,3 +23,11 @@ async def close_driver() -> None:
     if driver:
         await driver.close()
         logger.info("Neo4j driver closed")
+
+def get_driver() -> AsyncGraphDatabase:
+    global driver
+
+    if not driver:
+        raise Exception("Neo4j driver not initialized. Call init_driver() first.")
+    
+    return driver
