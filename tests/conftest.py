@@ -1,45 +1,45 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
-from repositories.graph_manager import GraphManager
-from repositories.db_manager import DBManager
+import asyncio
+import pytest_asyncio
+from db.postgres import init_db, close_db, get_sessionmaker
+from db.neo4j import init_driver, close_driver, get_driver
+from repositories.graph_manager import GraphManagerNeo4j
 
+@pytest_asyncio.fixture(scope="function") 
+async def init_test_db(): 
+    init_db() 
+    yield 
+    await close_db() 
+    
+@pytest_asyncio.fixture(scope="function")
+async def db_session(init_test_db):
+    SessionLocal = get_sessionmaker()
 
-@pytest.fixture
-def mock_driver():
-    """Создает mock Neo4j драйвера"""
-    return MagicMock()
+    async with SessionLocal() as session:
+        await session.begin()
 
+        await session.begin_nested()
 
-@pytest.fixture
-def mock_session():
-    """Создает mock сессии Neo4j"""
-    return AsyncMock()
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
 
+@pytest_asyncio.fixture(scope="function")
+async def neo4j_driver():
+    init_driver()
+    yield
+    await close_driver()
 
-@pytest.fixture
-def mock_result():
-    """Создает mock результата запроса"""
-    return AsyncMock()
+import pytest
 
+@pytest_asyncio.fixture(scope="function")
+async def neo4j_session(neo4j_driver):
+    driver = get_driver()
 
-@pytest.fixture
-def graph_manager(mock_driver):
-    """Создает экземпляр GraphManager с mock драйвером"""
-    return GraphManager(mock_driver)
+    async with driver.session() as session:
+        yield session
 
-
-@pytest.fixture
-def mock_db():
-    mock = MagicMock(spec=AsyncSession)
-    mock.execute = AsyncMock()
-    mock.commit = AsyncMock()
-    mock.refresh = AsyncMock()
-    mock.delete = AsyncMock()
-    mock.add = MagicMock()
-    return mock
-
-
-@pytest.fixture
-def db_manager(mock_db):
-    return DBManager(mock_db)
+        # cleanup после теста
+        await session.run("MATCH (n) DETACH DELETE n")

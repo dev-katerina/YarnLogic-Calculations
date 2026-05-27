@@ -9,7 +9,8 @@ Base = declarative_base()
 
 
 class StitchType(Base):
-    __tablename__ = f"{settings.postgres_schema}.stitch_type"
+    __tablename__ = "stitch_type"
+    __table_args__ = {"schema": settings.postgres_schema}
 
     name = Column(Text, primary_key=True)
     description = Column(Text, nullable=True)
@@ -17,20 +18,23 @@ class StitchType(Base):
 
 
 class RelationType(Base):
-    __tablename__ = f"{settings.postgres_schema}.relation_type"
+    __tablename__ = "relation_type"
+    __table_args__ = {"schema": settings.postgres_schema}
 
     name = Column(Text, primary_key=True)
     description = Column(Text, nullable=True)
 
 
 class Tool(Base):
-    __tablename__ = f"{settings.postgres_schema}.tool"
+    __tablename__ = "tool"
+    __table_args__ = {"schema": settings.postgres_schema}
 
     name = Column(Text, primary_key=True)
     description = Column(Text, nullable=True)
 
 class Pattern(Base):
-    __tablename__ = f"{settings.postgres_schema}.pattern"
+    __tablename__ = "pattern"
+    __table_args__ = {"schema": settings.postgres_schema}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(Text, nullable=False)
