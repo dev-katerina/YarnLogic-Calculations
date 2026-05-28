@@ -38,7 +38,14 @@ async def close_db() -> None:
         await engine.dispose()
         logger.info("PostgreSQL database connection closed")
 
-def get_sessionmaker():
+
+async def get_session() -> AsyncSession:
     if SessionLocal is None:
-        raise RuntimeError("DB is not initialized. Call init_db() first.")
-    return SessionLocal
+        raise RuntimeError("SessionLocal is not initialized")
+
+    async with SessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise

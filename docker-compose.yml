@@ -27,6 +27,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      graphdb:
+        condition: service_started
     env_file:
       - .env
     networks:

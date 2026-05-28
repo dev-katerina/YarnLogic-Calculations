@@ -31,3 +31,7 @@ def get_driver() -> AsyncGraphDatabase:
         raise Exception("Neo4j driver not initialized. Call init_driver() first.")
     
     return driver
+
+async def get_session() -> AsyncGraphDatabase:
+    driver = get_driver()
+    return driver.session()

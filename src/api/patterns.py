@@ -1,11 +1,31 @@
 from http import HTTPStatus
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+import neo4j
+from uuid import UUID
+
+from db.postgres import get_session as get_postgres_session
+from db.neo4j import get_session as get_neo4j_session
+from repositories import graph_manager, pattern, relation_type, stitch_type, tool_type 
+
+
 from api.schemas import CreateStitch, ReadStitch
 from api.schemas import CreateRelation, ReadRelation
 from api.schemas import ReadPattern, CreatePattern, ReadPatternDetail
 
+from service.patterns import PatternsService
+
 router = APIRouter()
+
+def get_scheduler_interval_service(
+    postgres_db: AsyncSession = Depends(get_postgres_session),
+    neo4j_db: neo4j.AsyncSession = Depends(get_neo4j_session),
+) -> PatternsService:
+    graph_repo = graph_manager.GraphManagerNeo4j(neo4j_db)
+    pattern_repo = pattern.PatternRepositoryPostgres(postgres_db)
+    return PatternsService(graph_repo, pattern_repo)
+
 
 '''Схемы'''
 
@@ -14,11 +34,16 @@ router = APIRouter()
     status_code=HTTPStatus.OK,
     response_model=List[ReadPattern],
     summary="List patterns",
-    description="Return a list of all saved pattern graphs.",
+    description="Return a list of all saved pattern graphs.",    
 )
-async def get_patterns():
-    """Retrieve all registered patterns."""
-    pass
+async def get_patterns(
+    patterns: PatternsService = Depends(get_scheduler_interval_service)
+):
+    result =  await patterns.get_all_patterns()
+    if len(result) == 0:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No patterns found")
+    return result
+
 
 @router.get(
     "/{graph_id}",
@@ -27,9 +52,14 @@ async def get_patterns():
     summary="Get pattern details",
     description="Return pattern metadata together with stitches and relations for the given pattern ID.",
 )
-async def get_pattern(graph_id: str):
-    """Retrieve a pattern with its stitches and relations."""
-    pass
+async def get_pattern(graph_id: UUID, 
+    patterns: PatternsService = Depends(get_scheduler_interval_service)
+):
+    try:
+        result = await patterns.get_pattern(graph_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 
 @router.post(
@@ -39,9 +69,9 @@ async def get_pattern(graph_id: str):
     summary="Create pattern",
     description="Create a new pattern graph with the provided name.",
 )
-async def create_pattern(pattern: CreatePattern):
-    """Create a new pattern."""
-    pass
+async def create_pattern(pattern: CreatePattern, patterns: PatternsService = Depends(get_scheduler_interval_service)):
+    new_pattern = await patterns.create_pattern(pattern)
+    return new_pattern
 
 
 @router.put(
@@ -51,9 +81,13 @@ async def create_pattern(pattern: CreatePattern):
     summary="Update pattern",
     description="Update the name of an existing pattern graph by ID.",
 )
-async def update_pattern(graph_id: str, pattern: CreatePattern):
+async def update_pattern(graph_id: str, pattern: CreatePattern,
+                         patterns: PatternsService = Depends(get_scheduler_interval_service)):
     """Update an existing pattern."""
-    pass
+    try:
+        return await patterns.update_pattern(graph_id, pattern)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 
 @router.delete(
@@ -62,9 +96,12 @@ async def update_pattern(graph_id: str, pattern: CreatePattern):
     summary="Delete pattern",
     description="Delete a pattern graph by its ID.",
 )
-async def delete_pattern(graph_id: str):
-    """Delete a pattern."""
-    pass
+async def delete_pattern(graph_id: str,
+                         patterns: PatternsService = Depends(get_scheduler_interval_service)):
+    try:
+        await patterns.delete_pattern(graph_id)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 '''Петли'''
 
