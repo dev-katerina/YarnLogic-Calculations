@@ -23,7 +23,7 @@ class RelationTypeRepository(ABC):
             pass
 
         @abstractmethod
-        async def delete(self, name: str) -> None:
+        async def delete(self, relation_type: RelationType) -> None:
             pass
 
         @abstractmethod
@@ -53,8 +53,8 @@ class RelationTypeRepositoryPostgres(RelationTypeRepository):
             await self.db.refresh(obj)
             return obj
         
-        async def delete(self, name: str) -> None:
-            await self.db.delete(name)
+        async def delete(self, relation_type: RelationType) -> None:
+            await self.db.delete(relation_type)
             await self.db.flush()
 
 

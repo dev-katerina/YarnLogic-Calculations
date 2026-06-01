@@ -25,7 +25,7 @@ class ToolRepository(ABC):
             pass
 
         @abstractmethod
-        async def delete(self, name: str) -> None:
+        async def delete(self, tool: Tool) -> None:
             pass
 
         @abstractmethod
@@ -55,8 +55,8 @@ class ToolRepositoryPostgres(ToolRepository):
             await self.db.refresh(obj)
             return obj
         
-        async def delete(self, name: str) -> None:
-            await self.db.delete(name)
+        async def delete(self, tool: Tool) -> None:
+            await self.db.delete(tool)
             await self.db.flush()
 
         async def commit(self) -> None:
