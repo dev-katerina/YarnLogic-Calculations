@@ -126,7 +126,6 @@ async def create_relation_type(relation_type: RelationType, assist: AssistServic
     except AlreadyExistsError as e:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
-
 @router.delete(
     "/relation-types/{name}",
     status_code=HTTPStatus.NO_CONTENT,
@@ -149,9 +148,12 @@ async def delete_relation_type(name: str, assist: AssistService = Depends(get_as
     summary="List tools",
     description="Return all available tools.",
 )
-async def get_tools():
+async def get_tools(assist: AssistService = Depends(get_assist_service)):
     """Retrieve all tools."""
-    pass
+    try:
+        return await assist.get_tool_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/tools/{name}",
@@ -160,9 +162,12 @@ async def get_tools():
     summary="Get tool",
     description="Return the details of a specific tool by name.",
 )
-async def get_tool(name: str):  
+async def get_tool(name: str, assist: AssistService = Depends(get_assist_service)):
     """Retrieve a tool by name."""
-    pass
+    try:
+        return await assist.get_tool_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/tools",
@@ -171,9 +176,12 @@ async def get_tool(name: str):
     summary="Create tool",
     description="Create a new tool with a name and optional description.",
 )
-async def create_tool(tool: Tool):
+async def create_tool(tool: Tool, assist: AssistService = Depends(get_assist_service)):
     """Create a new tool."""
-    pass
+    try:
+        return await assist.create_tool_type(tool)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
 
 @router.delete(
@@ -182,6 +190,9 @@ async def create_tool(tool: Tool):
     summary="Delete tool",
     description="Remove a tool by its name.",
 )
-async def delete_tool(name: str):
+async def delete_tool(name: str, assist: AssistService = Depends(get_assist_service)):
     """Delete a tool."""
-    pass
+    try:
+        await assist.delete_tool_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)

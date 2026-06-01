@@ -95,3 +95,34 @@ class AssistService:
             raise NotFoundError
         await self.relation_type_repo.delete(result)
         await self.relation_type_repo.commit()
+
+    async def get_tool_types(self) -> List[Tool]:
+        result = await self.tool_type_repo.get_all()
+        if len(result) == 0:
+            raise NotFoundError
+        return result
+    
+    async def get_tool_type(self, name: str) -> Tool:
+        result = await self.tool_type_repo.get_by_name(name)
+        if result is None:
+            raise NotFoundError
+        return result
+    
+    async def create_tool_type(self, tool: Tool) -> Tool:
+        existing = await self.tool_type_repo.get_by_name(tool.name)
+        if existing:
+            raise AlreadyExistsError
+
+        new_tool = Tool(
+            name=tool.name, description=tool.description
+        )
+        created = await self.tool_type_repo.create(new_tool)
+        await self.tool_type_repo.commit()
+        return created
+    
+    async def delete_tool_type(self, name: str) -> None:
+        result = await self.tool_type_repo.get_by_name(name)
+        if result is None:
+            raise NotFoundError
+        await self.tool_type_repo.delete(result)
+        await self.tool_type_repo.commit()
