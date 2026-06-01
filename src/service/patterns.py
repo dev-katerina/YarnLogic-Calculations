@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from repositories import graph_manager, pattern, relation_type, stitch_type, tool_type
 from models.postgres import Pattern, RelationType, StitchType, Tool
-from models.neo4j import Stitch , Relation
+from models.neo4j import Stitch, Relation
 from api.schemas import (
     CreatePattern,
     ReadPattern,
@@ -38,7 +38,7 @@ class PatternsService:
         pattern_info = await self.pattern_repo.get_by_id(pattern_id)
         if not pattern_info:
             raise ValueError("Pattern not found")
-        
+
         graph_data = await self.graph_repo.query_graph(pattern_id)
         stitches = []
         relations = []
@@ -70,21 +70,25 @@ class PatternsService:
         new_pattern = await self.pattern_repo.create(Pattern(name=pattern_data.name))
         await self.pattern_repo.commit()
         return ReadPattern(graph_id=str(new_pattern.id), name=new_pattern.name)
-    
-    async def update_pattern(self, pattern_id: str, pattern_data: CreatePattern) -> ReadPattern:
+
+    async def update_pattern(
+        self, pattern_id: str, pattern_data: CreatePattern
+    ) -> ReadPattern:
         pattern_obj = await self.pattern_repo.get_by_id(pattern_id)
 
         if not pattern_obj:
             raise ValueError("Pattern not found")
-        
+
         pattern_obj.name = pattern_data.name
         updated_pattern = await self.pattern_repo.update(pattern_obj)
         await self.pattern_repo.commit()
 
         return ReadPattern(graph_id=str(updated_pattern.id), name=updated_pattern.name)
-    
+
     async def delete_pattern(self, pattern_id: str):
-        pattern_obj = await self.pattern_repo.get_by_id(pattern_id)  # Проверяем, что паттерн существует
+        pattern_obj = await self.pattern_repo.get_by_id(
+            pattern_id
+        )  # Проверяем, что паттерн существует
 
         if not pattern_obj:
             raise ValueError("Pattern not found")
@@ -97,22 +101,21 @@ class PatternsService:
         pattern_info = await self.pattern_repo.get_by_id(graph_id)
         if not pattern_info:
             raise ValueError("Pattern not found")
-        
+
         type_info = await self.stitch_type_repo.get_by_name(stitch.type)
         if not type_info:
             raise ValueError("Stitch type not found")
-        
+
         tool_info = await self.tool_type_repo.get_by_name(stitch.tool)
         if not tool_info:
             raise ValueError("Tool type not found")
 
         stitch_id = uuid4()
-        
+
         while await self.graph_repo.get_node(stitch_id) is not None:
             stitch_id = uuid4()  # Генерируем новый UUID, если уже существует
 
-        new_stitch = Stitch(id=uuid4(), 
-                            type=stitch.type, 
-                            tool=stitch.tool, 
-                            graph_id=graph_id)
+        new_stitch = Stitch(
+            id=uuid4(), type=stitch.type, tool=stitch.tool, graph_id=graph_id
+        )
         self.graph_repo.add_node(new_stitch)

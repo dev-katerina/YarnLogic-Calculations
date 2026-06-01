@@ -5,7 +5,7 @@ from core.errors import NotFoundError, AlreadyExistsError
 
 from repositories import pattern, relation_type, stitch_type, tool_type
 from models.postgres import Pattern, RelationType, StitchType, Tool
-from models.neo4j import Stitch , Relation
+from models.neo4j import Stitch, Relation
 from api.schemas import (
     StitchType as ApiStitchType,
     CreatePattern,
@@ -35,7 +35,10 @@ class AssistService:
         stitch_types = await self.stitch_type_repo.get_all()
         if len(stitch_types) == 0:
             raise NotFoundError
-        return [ApiStitchType(name=st.name, description=st.description) for st in stitch_types]
+        return [
+            ApiStitchType(name=st.name, description=st.description)
+            for st in stitch_types
+        ]
 
     async def get_stitch_type(self, name: str) -> ApiStitchType:
         result = await self.stitch_type_repo.get_by_name(name)
@@ -47,15 +50,48 @@ class AssistService:
         existing = await self.stitch_type_repo.get_by_name(stitch_type.name)
         if existing:
             raise AlreadyExistsError
-        
-        new_stitch_type = StitchType(name=stitch_type.name, description=stitch_type.description)
+
+        new_stitch_type = StitchType(
+            name=stitch_type.name, description=stitch_type.description
+        )
         created = await self.stitch_type_repo.create(new_stitch_type)
         await self.stitch_type_repo.commit()
         return ApiStitchType(name=created.name, description=created.description)
-    
+
     async def delete_stitch_type(self, name: str) -> None:
         result = await self.stitch_type_repo.get_by_name(name)
         if result is None:
             raise NotFoundError
         await self.stitch_type_repo.delete(result)
         await self.stitch_type_repo.commit()
+
+    async def get_relation_types(self) -> List[RelationType]:
+        result = await self.relation_type_repo.get_all()
+        if len(result) == 0:
+            raise NotFoundError
+        return result
+    
+    async def get_relation_type(self, name: str) -> RelationType:
+        result = await self.relation_type_repo.get_by_name(name)
+        if result is None:
+            raise NotFoundError
+        return result
+    
+    async def create_relation_type(self, relation_type: RelationType) -> RelationType:
+        existing = await self.relation_type_repo.get_by_name(relation_type.name)
+        if existing:
+            raise AlreadyExistsError
+
+        new_relation_type = RelationType(
+            name=relation_type.name, description=relation_type.description
+        )
+        created = await self.relation_type_repo.create(new_relation_type)
+        await self.relation_type_repo.commit()
+        return created
+    
+    async def delete_relation_type(self, name: str) -> None:
+        result = await self.relation_type_repo.get_by_name(name)
+        if result is None:
+            raise NotFoundError
+        await self.relation_type_repo.delete(result)
+        await self.relation_type_repo.commit()

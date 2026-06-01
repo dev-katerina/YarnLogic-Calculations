@@ -69,8 +69,6 @@ async def create_stitch_type(stitch_type: StitchType,
     except AlreadyExistsError as e:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
-
-
 @router.delete(
     "/stitch-type/{name}",
     status_code=HTTPStatus.NO_CONTENT,
@@ -94,9 +92,11 @@ async def delete_stitch_type(name: str,
     summary="List relation types",
     description="Return all available relation types.",
 )
-async def get_relation_types():
-    """Retrieve all relation types."""
-    pass
+async def get_relation_types(assist: AssistService = Depends(get_assist_service)):
+    try:    
+        return await assist.get_relation_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/relation-types/{name}",
@@ -105,9 +105,12 @@ async def get_relation_types():
     summary="Get relation type",
     description="Return the details of a specific relation type by name.",
 )
-async def get_relation_type(name: str):
+async def get_relation_type(name: str, assist: AssistService = Depends(get_assist_service)):
     """Retrieve a relation type by name."""
-    pass
+    try:
+        return await assist.get_relation_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/relation-types",
@@ -116,9 +119,12 @@ async def get_relation_type(name: str):
     summary="Create relation type",
     description="Create a new relation type with a name and optional description.",
 )
-async def create_relation_type(relation_type: RelationType):
+async def create_relation_type(relation_type: RelationType, assist: AssistService = Depends(get_assist_service)):
     """Create a new relation type."""
-    pass
+    try:
+        return await assist.create_relation_type(relation_type)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
 
 @router.delete(
@@ -127,9 +133,12 @@ async def create_relation_type(relation_type: RelationType):
     summary="Delete relation type",
     description="Remove a relation type by its name.",
 )
-async def delete_relation_type(name: str):
+async def delete_relation_type(name: str, assist: AssistService = Depends(get_assist_service)):
     """Delete a relation type."""
-    pass
+    try:
+        await assist.delete_relation_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 '''Инструменты'''
 
