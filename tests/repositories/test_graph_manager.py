@@ -51,6 +51,15 @@ async def test_get_node(neo4j_session, stitch):
     assert node.tool == stitch.tool
     assert node.graph_id == stitch.graph_id
 
+
+@pytest.mark.asyncio
+async def test_get_non_existent_node(neo4j_session):
+    graph_manager = GraphManagerNeo4j(neo4j_session)
+
+    node = await graph_manager.get_node(uuid4())
+
+    assert node is None
+
 @pytest.mark.parametrize(
     "stitch",
     [

@@ -18,13 +18,16 @@ from service.patterns import PatternsService
 
 router = APIRouter()
 
-def get_scheduler_interval_service(
+def get_patterns_service(
     postgres_db: AsyncSession = Depends(get_postgres_session),
     neo4j_db: neo4j.AsyncSession = Depends(get_neo4j_session),
 ) -> PatternsService:
     graph_repo = graph_manager.GraphManagerNeo4j(neo4j_db)
     pattern_repo = pattern.PatternRepositoryPostgres(postgres_db)
-    return PatternsService(graph_repo, pattern_repo)
+    stitch_type_repo = stitch_type.StitchTypeRepositoryPostgres(postgres_db)
+    relation_type_repo = relation_type.RelationTypeRepositoryPostgres(postgres_db)
+    tool_type_repo = tool_type.ToolRepositoryPostgres(postgres_db)
+    return PatternsService(graph_repo, pattern_repo, stitch_type_repo, relation_type_repo, tool_type_repo)
 
 
 '''Схемы'''
@@ -37,7 +40,7 @@ def get_scheduler_interval_service(
     description="Return a list of all saved pattern graphs.",    
 )
 async def get_patterns(
-    patterns: PatternsService = Depends(get_scheduler_interval_service)
+    patterns: PatternsService = Depends(get_patterns_service)
 ):
     result =  await patterns.get_all_patterns()
     if len(result) == 0:
@@ -53,7 +56,7 @@ async def get_patterns(
     description="Return pattern metadata together with stitches and relations for the given pattern ID.",
 )
 async def get_pattern(graph_id: UUID, 
-    patterns: PatternsService = Depends(get_scheduler_interval_service)
+    patterns: PatternsService = Depends(get_patterns_service)
 ):
     try:
         result = await patterns.get_pattern(graph_id)
@@ -69,7 +72,7 @@ async def get_pattern(graph_id: UUID,
     summary="Create pattern",
     description="Create a new pattern graph with the provided name.",
 )
-async def create_pattern(pattern: CreatePattern, patterns: PatternsService = Depends(get_scheduler_interval_service)):
+async def create_pattern(pattern: CreatePattern, patterns: PatternsService = Depends(get_patterns_service)):
     new_pattern = await patterns.create_pattern(pattern)
     return new_pattern
 
@@ -82,7 +85,7 @@ async def create_pattern(pattern: CreatePattern, patterns: PatternsService = Dep
     description="Update the name of an existing pattern graph by ID.",
 )
 async def update_pattern(graph_id: str, pattern: CreatePattern,
-                         patterns: PatternsService = Depends(get_scheduler_interval_service)):
+                         patterns: PatternsService = Depends(get_patterns_service)):
     """Update an existing pattern."""
     try:
         return await patterns.update_pattern(graph_id, pattern)
@@ -97,7 +100,7 @@ async def update_pattern(graph_id: str, pattern: CreatePattern,
     description="Delete a pattern graph by its ID.",
 )
 async def delete_pattern(graph_id: str,
-                         patterns: PatternsService = Depends(get_scheduler_interval_service)):
+                         patterns: PatternsService = Depends(get_patterns_service)):
     try:
         await patterns.delete_pattern(graph_id)
     except ValueError as e:
@@ -108,13 +111,20 @@ async def delete_pattern(graph_id: str,
 @router.post(
     "/{graph_id}/stitch",
     status_code=HTTPStatus.CREATED,
-    response_model=ReadStitch,
+    response_model=ReadPatternDetail,
     summary="Add stitch",
     description="Add a new stitch to the specified pattern graph.",
 )
-async def add_stitch_to_pattern(graph_id: str, stitch: CreateStitch):
-    """Create a stitch within a pattern."""
-    pass
+async def add_stitch_to_pattern(graph_id: str, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
+    try:
+        await patterns.add_stitch(graph_id, stitch)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
+    
+    try:
+        return await patterns.get_pattern(graph_id)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.put(
     "/stitch/{stitch_id}",

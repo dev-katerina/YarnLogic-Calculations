@@ -13,7 +13,7 @@ class StitchTypeRepository(ABC):
             pass
 
         @abstractmethod
-        async def get_by_name(self, name: str) -> StitchType:
+        async def get_by_name(self, name: str) -> StitchType|None:
             pass
 
         @abstractmethod
@@ -28,15 +28,19 @@ class StitchTypeRepository(ABC):
         async def delete(self, name: str) -> None:
             pass
 
+        @abstractmethod
+        async def commit(self) -> None:
+            pass
+
 class StitchTypeRepositoryPostgres(StitchTypeRepository):
         def __init__(self, db: AsyncSession):
             self.db = db
 
         async def get_all(self) -> List[StitchType]:
-            result = await self.db.query(StitchType).all()
-            return result
+            result = await self.db.execute(select(StitchType))
+            return result.scalars().all()
         
-        async def get_by_name(self, name: str) -> StitchType:
+        async def get_by_name(self, name: str) -> StitchType|None:
             result = await self.db.execute(select(StitchType).where(StitchType.name == name))
             return result.scalar_one_or_none()
         
@@ -51,9 +55,9 @@ class StitchTypeRepositoryPostgres(StitchTypeRepository):
             await self.db.refresh(obj)
             return obj
         
-        async def delete(self, name: str) -> None:
-            result = await self.db.execute(select(StitchType).where(StitchType.name == name))
-            obj = result.scalar_one_or_none()
-            if obj:
-                await self.db.delete(obj)
-                await self.db.flush()
+        async def delete(self, stitch_type: StitchType) -> None:
+            await self.db.delete(stitch_type)
+            await self.db.flush()
+
+        async def commit(self):
+             return await self.db.commit()

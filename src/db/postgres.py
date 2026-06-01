@@ -33,6 +33,13 @@ def init_db() -> None:
     logger.info("PostgreSQL database initialized")
 
 
+def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
+    if SessionLocal is None:
+        raise RuntimeError("SessionLocal is not initialized")
+
+    return SessionLocal
+
+
 async def close_db() -> None:
     if engine:
         await engine.dispose()

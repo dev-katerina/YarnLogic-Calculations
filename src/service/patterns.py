@@ -1,4 +1,5 @@
 from typing import List
+from uuid import uuid4
 
 from repositories import graph_manager, pattern, relation_type, stitch_type, tool_type
 from models.postgres import Pattern, RelationType, StitchType, Tool
@@ -19,9 +20,15 @@ class PatternsService:
         self,
         graph_repo: graph_manager.GraphManager,
         pattern_repo: pattern.PatternRepository,
+        stitch_type_repo: stitch_type.StitchTypeRepository,
+        relation_type_repo: relation_type.RelationTypeRepository,
+        tool_type_repo: tool_type.ToolRepository,
     ):
         self.graph_repo = graph_repo
         self.pattern_repo = pattern_repo
+        self.stitch_type_repo = stitch_type_repo
+        self.relation_type_repo = relation_type_repo
+        self.tool_type_repo = tool_type_repo
 
     async def get_all_patterns(self) -> List[ReadPattern]:
         patterns = await self.pattern_repo.get_all()
@@ -85,3 +92,27 @@ class PatternsService:
         await self.graph_repo.delete_graph(pattern_id)
         await self.pattern_repo.delete(pattern_id)
         await self.pattern_repo.commit()
+
+    async def add_stitch(self, graph_id: str, stitch: CreateStitch):
+        pattern_info = await self.pattern_repo.get_by_id(graph_id)
+        if not pattern_info:
+            raise ValueError("Pattern not found")
+        
+        type_info = await self.stitch_type_repo.get_by_name(stitch.type)
+        if not type_info:
+            raise ValueError("Stitch type not found")
+        
+        tool_info = await self.tool_type_repo.get_by_name(stitch.tool)
+        if not tool_info:
+            raise ValueError("Tool type not found")
+
+        stitch_id = uuid4()
+        
+        while await self.graph_repo.get_node(stitch_id) is not None:
+            stitch_id = uuid4()  # Генерируем новый UUID, если уже существует
+
+        new_stitch = Stitch(id=uuid4(), 
+                            type=stitch.type, 
+                            tool=stitch.tool, 
+                            graph_id=graph_id)
+        self.graph_repo.add_node(new_stitch)

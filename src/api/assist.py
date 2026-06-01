@@ -1,9 +1,27 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from api.schemas import StitchType, RelationType, Tool
 from http import HTTPStatus
 
+from db.postgres import get_session as get_postgres_session
+from repositories import pattern, relation_type, stitch_type, tool_type 
+
+from core.errors import NotFoundError, AlreadyExistsError
+
+from service.assist import AssistService
+
 router = APIRouter()
+
+
+def get_assist_service(
+    postgres_db: AsyncSession = Depends(get_postgres_session),
+) -> AssistService:
+    pattern_repo = pattern.PatternRepositoryPostgres(postgres_db)
+    stitch_type_repo = stitch_type.StitchTypeRepositoryPostgres(postgres_db)
+    relation_type_repo = relation_type.RelationTypeRepositoryPostgres(postgres_db)
+    tool_type_repo = tool_type.ToolRepositoryPostgres(postgres_db)
+    return AssistService(pattern_repo, stitch_type_repo, relation_type_repo, tool_type_repo)
 
 '''Петли'''
 
@@ -14,9 +32,13 @@ router = APIRouter()
     summary="List stitch types",
     description="Return all available stitch types.",
 )
-async def get_stitch_types():
-    """Retrieve all stitch types."""
-    pass
+async def get_stitch_types(
+    assist: AssistService = Depends(get_assist_service)
+):
+    try:
+        return await assist.get_stitch_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/stitch-type/{name}",
@@ -25,9 +47,13 @@ async def get_stitch_types():
     summary="Get stitch type",
     description="Return the details of a specific stitch type by name.",
 )
-async def get_stitch_type(name: str):
+async def get_stitch_type(name: str,
+    assist: AssistService = Depends(get_assist_service)):
     """Retrieve a stitch type by name."""
-    pass
+    try:
+        return await assist.get_stitch_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/stitch-type",
@@ -36,9 +62,13 @@ async def get_stitch_type(name: str):
     summary="Create stitch type",
     description="Create a new stitch type with a name and optional description.",
 )
-async def create_stitch_type(stitch_type: StitchType):
-    """Create a new stitch type."""
-    pass
+async def create_stitch_type(stitch_type: StitchType,
+    assist: AssistService = Depends(get_assist_service)):
+    try:
+        return await assist.create_stitch_type(stitch_type)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
+
 
 
 @router.delete(
@@ -47,9 +77,13 @@ async def create_stitch_type(stitch_type: StitchType):
     summary="Delete stitch type",
     description="Remove a stitch type by its name.",
 )
-async def delete_stitch_type(name: str):
+async def delete_stitch_type(name: str,
+    assist: AssistService = Depends(get_assist_service)):
     """Delete a stitch type."""
-    pass
+    try:
+        await assist.delete_stitch_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 '''Связи'''
 
