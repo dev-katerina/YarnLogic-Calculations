@@ -166,11 +166,39 @@ async def test_query_graph(neo4j_session, graph_id, stitch1, stitch2, relation_d
     await graph_manager.add_relationship(stitch1.id, stitch2.id, relation_data)
     items = await graph_manager.query_graph(graph_id)
 
-    assert len(items) == 1
-    assert isinstance(items[0][0], Stitch)
-    assert isinstance(items[0][1], Relation)
-    assert isinstance(items[0][2], Stitch)
-    assert items[0][1].id == relation_data.id
+    assert len(items) == 2
+    assert any(
+        item[0].id == stitch1.id and item[1] is not None and item[2] is not None and item[1].id == relation_data.id
+        for item in items
+    )
+    assert any(
+        item[0].id == stitch2.id and item[1] is None and item[2] is None
+        for item in items
+    )
+
+
+@pytest.mark.parametrize(
+    "graph_id, stitch1, stitch2",
+    [
+        (
+            graph_id := uuid4(),
+            Stitch(id=uuid4(), type="stitch", tool="Test Tool", graph_id=graph_id),
+            Stitch(id=uuid4(), type="stitch", tool="Test Tool", graph_id=graph_id),
+        )
+    ]
+)
+@pytest.mark.asyncio
+async def test_query_graph_includes_isolated_nodes(neo4j_session, graph_id, stitch1, stitch2):
+    graph_manager = GraphManagerNeo4j(neo4j_session)
+
+    await graph_manager.add_node(stitch1)
+    await graph_manager.add_node(stitch2)
+
+    items = await graph_manager.query_graph(graph_id)
+
+    assert len(items) == 2
+    assert any(item[0].id == stitch1.id and item[1] is None and item[2] is None for item in items)
+    assert any(item[0].id == stitch2.id and item[1] is None and item[2] is None for item in items)
 
 
 @pytest.mark.parametrize(

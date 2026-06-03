@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import neo4j
 from uuid import UUID
+from logging import getLogger
 
 from db.postgres import get_session as get_postgres_session
 from db.neo4j import get_session as get_neo4j_session
@@ -15,6 +16,8 @@ from api.schemas import CreateRelation, ReadRelation
 from api.schemas import ReadPattern, CreatePattern, ReadPatternDetail
 
 from service.patterns import PatternsService
+
+logger = getLogger(__name__)
 
 router = APIRouter()
 
@@ -115,28 +118,44 @@ async def delete_pattern(graph_id: str,
     summary="Add stitch",
     description="Add a new stitch to the specified pattern graph.",
 )
-async def add_stitch_to_pattern(graph_id: str, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
+async def add_stitch_to_pattern(graph_id: UUID, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
+    '''Add a stitch to a pattern.'''
     try:
         await patterns.add_stitch(graph_id, stitch)
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
     
     try:
-        return await patterns.get_pattern(graph_id)
+        result = await patterns.get_pattern(graph_id)
+        return result
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.put(
     "/stitch/{stitch_id}",
     status_code=HTTPStatus.OK,
-    response_model=ReadStitch,
+    response_model=ReadPatternDetail,
     summary="Update stitch",
     description="Update an existing stitch by stitch ID.",
 )
-async def update_stitch_in_pattern(stitch_id: str, stitch: CreateStitch):
+async def update_stitch_in_pattern(stitch_id: str, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
     """Update a stitch."""
-    pass
+    try:
+        updated_stitch = await patterns.update_stitch(stitch_id, stitch)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
+    if updated_stitch is None:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update stitch",
+        )
+
+    try:
+        result = await patterns.get_pattern(UUID(str(updated_stitch.graph_id)))
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.delete(
     "/stitch/{stitch_id}",
@@ -144,33 +163,54 @@ async def update_stitch_in_pattern(stitch_id: str, stitch: CreateStitch):
     summary="Delete stitch",
     description="Remove a stitch from the pattern graph by its ID.",
 )
-async def delete_stitch_from_pattern(stitch_id: str):
+async def delete_stitch_from_pattern(stitch_id: str, patterns: PatternsService = Depends(get_patterns_service)):
     """Delete a stitch."""
-    pass
+    try:
+        await patterns.delete_stitch(stitch_id)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 '''Связи'''
 
 @router.post(
     "/relation",
     status_code=HTTPStatus.CREATED,
-    response_model=ReadRelation,
+    response_model=ReadPatternDetail,
     summary="Add relation",
     description="Create a new relation between two stitches in a pattern.",
 )
-async def add_relation_to_pattern(relation: CreateRelation):
+async def add_relation_to_pattern(relation: CreateRelation, patterns: PatternsService = Depends(get_patterns_service)):
     """Create a relation."""
-    pass
+    try:
+        new_relation = await patterns.add_relation(relation.graph_id, relation)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
+
+    try:
+        result = await patterns.get_pattern(UUID(str(new_relation.graph_id)))
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.put(
     "/relation/{relation_id}",
     status_code=HTTPStatus.OK,
-    response_model=ReadRelation,
+    response_model=ReadPatternDetail,
     summary="Update relation",
     description="Update an existing relation by its ID.",
 )
-async def update_relation_in_pattern(relation_id: str, relation: CreateRelation):
+async def update_relation_in_pattern(relation_id: UUID, relation: CreateRelation, patterns: PatternsService = Depends(get_patterns_service)):
     """Update a relation."""
-    pass
+    try:
+        await patterns.update_relation(relation_id, relation)
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
+
+    try:
+        result = await patterns.get_pattern(UUID(str(relation.graph_id)))
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.delete(
     "/relation/{relation_id}",
@@ -178,6 +218,9 @@ async def update_relation_in_pattern(relation_id: str, relation: CreateRelation)
     summary="Delete relation",
     description="Delete a relation from the pattern graph by its ID.",
 )
-async def delete_relation_from_pattern(relation_id: str):
+async def delete_relation_from_pattern(relation_id: UUID, patterns: PatternsService = Depends(get_patterns_service)):
     """Delete a relation."""
-    pass
+    try:
+        await patterns.delete_relation(UUID(relation_id))
+    except ValueError as e:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))

@@ -45,7 +45,7 @@ async def test_delete_stitch_type(db_session):
     data = StitchType(name="To Be Deleted")
     created_stitch_type = await repo.create(data)
 
-    await repo.delete(created_stitch_type.name)
+    await repo.delete(created_stitch_type)
     deleted_stitch_type = await repo.get_by_name(created_stitch_type.name)
 
     assert deleted_stitch_type is None

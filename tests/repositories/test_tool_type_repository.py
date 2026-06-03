@@ -38,7 +38,7 @@ async def test_delete_tool(db_session):
     data = Tool(name="To Be Deleted")
     created_tool = await repo.create(data)
 
-    await repo.delete(created_tool.name)
+    await repo.delete(created_tool)
     deleted_tool = await repo.get_by_name(created_tool.name)
 
     assert deleted_tool is None
