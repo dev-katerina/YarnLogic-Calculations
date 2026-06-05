@@ -23,7 +23,11 @@ class RelationTypeRepository(ABC):
             pass
 
         @abstractmethod
-        async def delete(self, name: str) -> None:
+        async def delete(self, relation_type: RelationType) -> None:
+            pass
+
+        @abstractmethod
+        async def commit(self) -> None:
             pass
 
 class RelationTypeRepositoryPostgres(RelationTypeRepository):
@@ -31,8 +35,8 @@ class RelationTypeRepositoryPostgres(RelationTypeRepository):
             self.db = db
 
         async def get_all(self) -> List[RelationType]:
-            result = await self.db.query(RelationType).all()
-            return result
+            result = await self.db.execute(select(RelationType))
+            return result.scalars().all()
         
         async def get_by_name(self, name: str) -> RelationType:
             result = await self.db.execute(select(RelationType).where(RelationType.name == name))
@@ -49,9 +53,10 @@ class RelationTypeRepositoryPostgres(RelationTypeRepository):
             await self.db.refresh(obj)
             return obj
         
-        async def delete(self, name: str) -> None:
-            result = await self.db.execute(select(RelationType).where(RelationType.name == name))
-            obj = result.scalar_one_or_none()
-            if obj:
-                await self.db.delete(obj)
-                await self.db.flush()
+        async def delete(self, relation_type: RelationType) -> None:
+            await self.db.delete(relation_type)
+            await self.db.flush()
+
+
+        async def commit(self):
+             return await self.db.commit()

@@ -38,7 +38,7 @@ async def test_delete_relation_type(db_session):
     data = RelationType(name="To Be Deleted")
     created_relation_type = await repo.create(data)
 
-    await repo.delete(created_relation_type.name)
+    await repo.delete(created_relation_type)
     deleted_relation_type = await repo.get_by_name(created_relation_type.name)
 
     assert deleted_relation_type is None

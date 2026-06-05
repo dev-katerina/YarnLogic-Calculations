@@ -1,9 +1,27 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from api.schemas import StitchType, RelationType, Tool
 from http import HTTPStatus
 
+from db.postgres import get_session as get_postgres_session
+from repositories import pattern, relation_type, stitch_type, tool_type 
+
+from core.errors import NotFoundError, AlreadyExistsError
+
+from service.assist import AssistService
+
 router = APIRouter()
+
+
+def get_assist_service(
+    postgres_db: AsyncSession = Depends(get_postgres_session),
+) -> AssistService:
+    pattern_repo = pattern.PatternRepositoryPostgres(postgres_db)
+    stitch_type_repo = stitch_type.StitchTypeRepositoryPostgres(postgres_db)
+    relation_type_repo = relation_type.RelationTypeRepositoryPostgres(postgres_db)
+    tool_type_repo = tool_type.ToolRepositoryPostgres(postgres_db)
+    return AssistService(pattern_repo, stitch_type_repo, relation_type_repo, tool_type_repo)
 
 '''Петли'''
 
@@ -14,9 +32,13 @@ router = APIRouter()
     summary="List stitch types",
     description="Return all available stitch types.",
 )
-async def get_stitch_types():
-    """Retrieve all stitch types."""
-    pass
+async def get_stitch_types(
+    assist: AssistService = Depends(get_assist_service)
+):
+    try:
+        return await assist.get_stitch_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/stitch-type/{name}",
@@ -25,9 +47,13 @@ async def get_stitch_types():
     summary="Get stitch type",
     description="Return the details of a specific stitch type by name.",
 )
-async def get_stitch_type(name: str):
+async def get_stitch_type(name: str,
+    assist: AssistService = Depends(get_assist_service)):
     """Retrieve a stitch type by name."""
-    pass
+    try:
+        return await assist.get_stitch_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/stitch-type",
@@ -36,10 +62,12 @@ async def get_stitch_type(name: str):
     summary="Create stitch type",
     description="Create a new stitch type with a name and optional description.",
 )
-async def create_stitch_type(stitch_type: StitchType):
-    """Create a new stitch type."""
-    pass
-
+async def create_stitch_type(stitch_type: StitchType,
+    assist: AssistService = Depends(get_assist_service)):
+    try:
+        return await assist.create_stitch_type(stitch_type)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
 @router.delete(
     "/stitch-type/{name}",
@@ -47,9 +75,13 @@ async def create_stitch_type(stitch_type: StitchType):
     summary="Delete stitch type",
     description="Remove a stitch type by its name.",
 )
-async def delete_stitch_type(name: str):
+async def delete_stitch_type(name: str,
+    assist: AssistService = Depends(get_assist_service)):
     """Delete a stitch type."""
-    pass
+    try:
+        await assist.delete_stitch_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 '''Связи'''
 
@@ -60,9 +92,11 @@ async def delete_stitch_type(name: str):
     summary="List relation types",
     description="Return all available relation types.",
 )
-async def get_relation_types():
-    """Retrieve all relation types."""
-    pass
+async def get_relation_types(assist: AssistService = Depends(get_assist_service)):
+    try:    
+        return await assist.get_relation_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/relation-types/{name}",
@@ -71,9 +105,12 @@ async def get_relation_types():
     summary="Get relation type",
     description="Return the details of a specific relation type by name.",
 )
-async def get_relation_type(name: str):
+async def get_relation_type(name: str, assist: AssistService = Depends(get_assist_service)):
     """Retrieve a relation type by name."""
-    pass
+    try:
+        return await assist.get_relation_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/relation-types",
@@ -82,10 +119,12 @@ async def get_relation_type(name: str):
     summary="Create relation type",
     description="Create a new relation type with a name and optional description.",
 )
-async def create_relation_type(relation_type: RelationType):
+async def create_relation_type(relation_type: RelationType, assist: AssistService = Depends(get_assist_service)):
     """Create a new relation type."""
-    pass
-
+    try:
+        return await assist.create_relation_type(relation_type)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
 @router.delete(
     "/relation-types/{name}",
@@ -93,9 +132,12 @@ async def create_relation_type(relation_type: RelationType):
     summary="Delete relation type",
     description="Remove a relation type by its name.",
 )
-async def delete_relation_type(name: str):
+async def delete_relation_type(name: str, assist: AssistService = Depends(get_assist_service)):
     """Delete a relation type."""
-    pass
+    try:
+        await assist.delete_relation_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 '''Инструменты'''
 
@@ -106,9 +148,12 @@ async def delete_relation_type(name: str):
     summary="List tools",
     description="Return all available tools.",
 )
-async def get_tools():
+async def get_tools(assist: AssistService = Depends(get_assist_service)):
     """Retrieve all tools."""
-    pass
+    try:
+        return await assist.get_tool_types()
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.get(
     "/tools/{name}",
@@ -117,9 +162,12 @@ async def get_tools():
     summary="Get tool",
     description="Return the details of a specific tool by name.",
 )
-async def get_tool(name: str):  
+async def get_tool(name: str, assist: AssistService = Depends(get_assist_service)):
     """Retrieve a tool by name."""
-    pass
+    try:
+        return await assist.get_tool_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)
 
 @router.post(
     "/tools",
@@ -128,9 +176,12 @@ async def get_tool(name: str):
     summary="Create tool",
     description="Create a new tool with a name and optional description.",
 )
-async def create_tool(tool: Tool):
+async def create_tool(tool: Tool, assist: AssistService = Depends(get_assist_service)):
     """Create a new tool."""
-    pass
+    try:
+        return await assist.create_tool_type(tool)
+    except AlreadyExistsError as e:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=AlreadyExistsError.INVALID_PARAMETERS)
 
 
 @router.delete(
@@ -139,6 +190,9 @@ async def create_tool(tool: Tool):
     summary="Delete tool",
     description="Remove a tool by its name.",
 )
-async def delete_tool(name: str):
+async def delete_tool(name: str, assist: AssistService = Depends(get_assist_service)):
     """Delete a tool."""
-    pass
+    try:
+        await assist.delete_tool_type(name)
+    except NotFoundError:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=NotFoundError.INVALID_PARAMETERS)

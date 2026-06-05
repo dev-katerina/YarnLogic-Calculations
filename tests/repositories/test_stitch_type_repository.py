@@ -22,6 +22,13 @@ async def test_get_stitch_type_by_name(db_session):
     assert fetched_stitch_type.name == created_stitch_type.name
 
 @pytest.mark.asyncio
+async def test_get_none_existant_stitch_type_by_name(db_session):
+    repo = StitchTypeRepositoryPostgres(db_session)
+
+    fetched_stitch_type = await repo.get_by_name("Unique Stitch Type Name")
+    assert fetched_stitch_type is None
+
+@pytest.mark.asyncio
 async def test_update_stitch_type(db_session):
     repo = StitchTypeRepositoryPostgres(db_session)
     data = StitchType(name="Old Stitch Type Name")
@@ -38,7 +45,7 @@ async def test_delete_stitch_type(db_session):
     data = StitchType(name="To Be Deleted")
     created_stitch_type = await repo.create(data)
 
-    await repo.delete(created_stitch_type.name)
+    await repo.delete(created_stitch_type)
     deleted_stitch_type = await repo.get_by_name(created_stitch_type.name)
 
     assert deleted_stitch_type is None

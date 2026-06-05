@@ -32,6 +32,10 @@ class PatternRepository(ABC):
     async def delete(self, pattern_id: UUID):
         pass
 
+    @abstractmethod
+    async def commit(self):
+        pass
+
 class PatternRepositoryPostgres(PatternRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -74,3 +78,6 @@ class PatternRepositoryPostgres(PatternRepository):
         if obj:
             await self.db.delete(obj)
             await self.db.flush()
+
+    async def commit(self):
+        await self.db.commit()

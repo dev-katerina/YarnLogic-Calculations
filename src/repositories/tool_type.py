@@ -25,7 +25,11 @@ class ToolRepository(ABC):
             pass
 
         @abstractmethod
-        async def delete(self, name: str) -> None:
+        async def delete(self, tool: Tool) -> None:
+            pass
+
+        @abstractmethod
+        async def commit(self) -> None:
             pass
 
 class ToolRepositoryPostgres(ToolRepository):
@@ -33,8 +37,8 @@ class ToolRepositoryPostgres(ToolRepository):
             self.db = db
 
         async def get_all(self) -> List[Tool]:
-            result = await self.db.query(Tool).all()
-            return result
+            result = await self.db.execute(select(Tool))
+            return result.scalars().all()
         
         async def get_by_name(self, name: str) -> Tool:
             result = await self.db.execute(select(Tool).where(Tool.name == name))
@@ -51,9 +55,9 @@ class ToolRepositoryPostgres(ToolRepository):
             await self.db.refresh(obj)
             return obj
         
-        async def delete(self, name: str) -> None:
-            result = await self.db.execute(select(Tool).where(Tool.name == name))
-            obj = result.scalar_one_or_none()
-            if obj:
-                await self.db.delete(obj)
-                await self.db.flush()
+        async def delete(self, tool: Tool) -> None:
+            await self.db.delete(tool)
+            await self.db.flush()
+
+        async def commit(self) -> None:
+            await self.db.commit()
