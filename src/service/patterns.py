@@ -105,7 +105,7 @@ class PatternsService:
         await self.pattern_repo.delete(pattern_id)
         await self.pattern_repo.commit()
 
-    async def add_stitch(self, graph_id: UUID, stitch: CreateStitch):
+    async def add_stitch(self, graph_id: UUID, stitch: CreateStitch) -> ReadStitch:
         pattern_info = await self.pattern_repo.get_by_id(str(graph_id))
         if not pattern_info:
             raise ValueError("Pattern not found")
@@ -127,6 +127,15 @@ class PatternsService:
             id=uuid4(), type=stitch.type, tool=stitch.tool, graph_id=str(graph_id)
         )
         await self.graph_repo.add_node(new_stitch)
+
+        return ReadStitch(
+            id=str(new_stitch.id),
+            type=new_stitch.type,
+            tool=new_stitch.tool,
+            graph_id=str(graph_id),
+        )
+
+
 
     async def update_stitch(self, stitch_id: str, stitch_data: CreateStitch) -> ReadStitch:
         existing_stitch = await self.graph_repo.get_node(stitch_id)
@@ -190,7 +199,7 @@ class PatternsService:
         )
         return new_relation
     
-    async def update_relation(self, relation_id: str, relation_data: CreateRelation):
+    async def update_relation(self, relation_id: str, relation_data: CreateRelation) -> ReadRelation:
         existing_relation = await self.graph_repo.get_relationship(relation_id)
         if not existing_relation:
             raise ValueError("Relation not found")
@@ -211,6 +220,14 @@ class PatternsService:
             from_id=relation_data.base_stitch_id,
             to_id=relation_data.target_stitch_id,
             relation=existing_relation,
+        )
+
+        return ReadRelation(
+            id=str(existing_relation.id),
+            type=existing_relation.type,
+            graph_id=existing_relation.graph_id,
+            base_stitch_id=str(relation_data.base_stitch_id),
+            target_stitch_id=str(relation_data.target_stitch_id)
         )
 
     async def delete_relation(self, relation_id: UUID) -> None:

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from db import neo4j, postgres
 from api import patterns, assist
@@ -25,6 +26,14 @@ app = FastAPI(
     title="YarnLogic Calculations API",
     description="API for managing knitting patterns, stitches, relations, and tools.",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # React
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(assist.router, prefix="/assist", tags=["assist"])
