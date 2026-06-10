@@ -114,46 +114,28 @@ async def delete_pattern(graph_id: str,
 @router.post(
     "/{graph_id}/stitch",
     status_code=HTTPStatus.CREATED,
-    response_model=ReadPatternDetail,
+    response_model=ReadStitch,
     summary="Add stitch",
     description="Add a new stitch to the specified pattern graph.",
 )
 async def add_stitch_to_pattern(graph_id: UUID, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
     '''Add a stitch to a pattern.'''
     try:
-        await patterns.add_stitch(graph_id, stitch)
+        return await patterns.add_stitch(graph_id, stitch)
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
     
-    try:
-        result = await patterns.get_pattern(graph_id)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
-
 @router.put(
     "/stitch/{stitch_id}",
     status_code=HTTPStatus.OK,
-    response_model=ReadPatternDetail,
+    response_model=ReadStitch,
     summary="Update stitch",
     description="Update an existing stitch by stitch ID.",
 )
 async def update_stitch_in_pattern(stitch_id: str, stitch: CreateStitch, patterns: PatternsService = Depends(get_patterns_service)):
     """Update a stitch."""
     try:
-        updated_stitch = await patterns.update_stitch(stitch_id, stitch)
-    except ValueError as e:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
-
-    if updated_stitch is None:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail="Failed to update stitch",
-        )
-
-    try:
-        result = await patterns.get_pattern(UUID(str(updated_stitch.graph_id)))
-        return result
+        return await patterns.update_stitch(stitch_id, stitch)
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
@@ -175,40 +157,28 @@ async def delete_stitch_from_pattern(stitch_id: str, patterns: PatternsService =
 @router.post(
     "/relation",
     status_code=HTTPStatus.CREATED,
-    response_model=ReadPatternDetail,
+    response_model=ReadRelation,
     summary="Add relation",
     description="Create a new relation between two stitches in a pattern.",
 )
 async def add_relation_to_pattern(relation: CreateRelation, patterns: PatternsService = Depends(get_patterns_service)):
     """Create a relation."""
     try:
-        new_relation = await patterns.add_relation(relation.graph_id, relation)
-    except ValueError as e:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
-
-    try:
-        result = await patterns.get_pattern(UUID(str(new_relation.graph_id)))
-        return result
+        return await patterns.add_relation(relation.graph_id, relation)
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
 @router.put(
     "/relation/{relation_id}",
     status_code=HTTPStatus.OK,
-    response_model=ReadPatternDetail,
+    response_model=ReadRelation,
     summary="Update relation",
     description="Update an existing relation by its ID.",
 )
 async def update_relation_in_pattern(relation_id: UUID, relation: CreateRelation, patterns: PatternsService = Depends(get_patterns_service)):
     """Update a relation."""
     try:
-        await patterns.update_relation(relation_id, relation)
-    except ValueError as e:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
-
-    try:
-        result = await patterns.get_pattern(UUID(str(relation.graph_id)))
-        return result
+        return await patterns.update_relation(relation_id, relation)
     except ValueError as e:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(e))
 
