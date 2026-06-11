@@ -197,7 +197,13 @@ class PatternsService:
             relation.target_stitch_id,
             new_relation,
         )
-        return new_relation
+        return ReadRelation(
+            id=str(new_relation.id),
+            type=new_relation.type,
+            graph_id=str(graph_id),
+            base_stitch_id=str(relation.base_stitch_id),
+            target_stitch_id=str(relation.target_stitch_id)
+        )
     
     async def update_relation(self, relation_id: str, relation_data: CreateRelation) -> ReadRelation:
         existing_relation = await self.graph_repo.get_relationship(relation_id)
