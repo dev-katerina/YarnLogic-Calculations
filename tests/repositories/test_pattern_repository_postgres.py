@@ -1,7 +1,6 @@
 import pytest
-import asyncio
-from repositories.pattern import PatternRepositoryPostgres
 from models.postgres import Pattern
+from repositories.pattern import PatternRepositoryPostgres
 
 @pytest.mark.asyncio
 async def test_create_pattern(db_session):

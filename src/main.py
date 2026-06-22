@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from db import neo4j, postgres
+from db import neo4j, postgres, elastic
 from api import patterns, assist
 
 logging.basicConfig(level=logging.INFO)
@@ -15,11 +15,12 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up the application...")
     neo4j.init_driver()
     postgres.init_db()
+    elastic.init_db()
 
     yield
 
     logger.info("Shutting down the application...")
-    await asyncio.gather(neo4j.close_driver(), postgres.close_db())
+    await asyncio.gather(neo4j.close_driver(), postgres.close_db(), elastic.close_db())
 
 
 app = FastAPI(

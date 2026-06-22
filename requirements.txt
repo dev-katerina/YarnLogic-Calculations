@@ -7,3 +7,5 @@ asyncpg
 uvicorn
 pytest
 pytest-asyncio
+elasticsearch 
+aiohttp

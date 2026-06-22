@@ -68,6 +68,19 @@ services:
       - app-network
       
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms200m -Xmx200m
+    restart: unless-stopped
+    networks:
+      - app-network
+
 volumes:
   neo4j_data:
   neo4j_logs:

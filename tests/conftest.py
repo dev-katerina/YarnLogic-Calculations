@@ -1,9 +1,10 @@
-import pytest
-import asyncio
 import pytest_asyncio
+
 from db.postgres import init_db, close_db, get_sessionmaker
 from db.neo4j import init_driver, close_driver, get_driver
 from repositories.graph_manager import GraphManagerNeo4j
+from db import neo4j, postgres, elastic
+
 
 @pytest_asyncio.fixture(scope="function") 
 async def init_test_db(): 
@@ -32,7 +33,6 @@ async def neo4j_driver():
     yield
     await close_driver()
 
-import pytest
 
 @pytest_asyncio.fixture(scope="function")
 async def neo4j_session(neo4j_driver):
@@ -43,3 +43,14 @@ async def neo4j_session(neo4j_driver):
 
         # cleanup после теста
         await session.run("MATCH (n) DETACH DELETE n")
+
+@pytest_asyncio.fixture(scope="function")
+async def init_elastic_db():
+    elastic.init_db()
+    yield
+    await elastic.close_db()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def elastic_client(init_elastic_db):
+    yield elastic.es_client

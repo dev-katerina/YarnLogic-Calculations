@@ -14,5 +14,6 @@ class Config(BaseSettings):
     postgres_db: str = "yarnlogic"
     postgres_schema: str = "yarnlogic_calculate"
 
+    es_hosts: list[str] = ["http://elasticsearch:9200"]
 
 settings = Config()
