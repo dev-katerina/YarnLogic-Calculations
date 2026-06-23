@@ -12,7 +12,8 @@ def init_db() -> AsyncElasticsearch:
 
     if es_client is None:
         es_client = AsyncElasticsearch(
-            hosts=settings.es_hosts
+            hosts=[f"http://{settings.es_host}:{settings.es_port}"],
+            basic_auth=("elastic", settings.es_password)
         )
         logger.info("ElasticSearch database initialized")
     else:

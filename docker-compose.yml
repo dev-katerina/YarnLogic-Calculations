@@ -10,6 +10,8 @@ services:
          condition: service_healthy
       tests: 
         condition: service_completed_successfully
+      es-init:
+        condition: service_completed_successfully
     volumes:
       - ./src:/app
     env_file:
@@ -75,11 +77,25 @@ services:
       - "9200:9200"
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
       - ES_JAVA_OPTS=-Xms200m -Xmx200m
     restart: unless-stopped
     networks:
       - app-network
+      
+  es-init:
+    build:
+      context: ./db/elastic/
+      dockerfile: Dockerfile
+    depends_on:
+      elasticsearch:
+        condition: service_started
+    env_file:
+      - .env
+    networks:
+      - app-network
+    restart: "no"
 
 volumes:
   neo4j_data:
