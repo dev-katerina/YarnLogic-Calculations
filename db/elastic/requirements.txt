@@ -1,0 +1,2 @@
+pydantic_settings
+elasticsearch==8.6.2

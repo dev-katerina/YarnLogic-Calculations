@@ -7,3 +7,5 @@ asyncpg
 uvicorn
 pytest
 pytest-asyncio
+elasticsearch==8.12.0
+aiohttp

@@ -3,8 +3,15 @@
 from abc import ABC, abstractmethod
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from elasticsearch import AsyncElasticsearch
+
 from models.postgres import Tool
+from models.es_models import ToolDocument
 from sqlalchemy import select
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ToolRepository(ABC):
@@ -61,3 +68,90 @@ class ToolRepositoryPostgres(ToolRepository):
 
         async def commit(self) -> None:
             await self.db.commit()
+
+class ToolRepositoryElastic(ToolRepository):
+    def __init__(self, es_client: AsyncElasticsearch):
+        self.es_client = es_client
+        self.index = "tools"
+
+    async def get_all(self) -> list[ToolDocument]:
+        res = await self.es_client.search(index=self.index)
+
+        return [
+            ToolDocument.from_es(hit)
+            for hit in res["hits"]["hits"]
+        ]
+
+    async def get_by_name(self, name: str) -> list[ToolDocument] | None:
+        try:
+            res = await self.es_client.search(
+                index=self.index,
+                body={
+                    "query": {
+                        "match": {
+                            "name": {
+                                "query": name,
+                                "fuzziness": "auto"
+                            }
+                        }
+                    }
+                }
+            )
+        except TypeError:
+            res = await self.es_client.search(
+                index=self.index,
+                query={
+                    "match": {
+                        "name": {
+                            "query": name,
+                            "fuzziness": "auto"
+                        }
+                    }
+                }
+            )
+
+        return [
+            ToolDocument.from_es(hit)
+            for hit in res["hits"]["hits"]
+        ]
+
+    async def create(self, relation: Tool) -> ToolDocument:
+        tool_doc = ToolDocument(name=relation.name, description=relation.description)
+        await self.es_client.index(
+            index=self.index,
+            document=tool_doc.to_es()
+        )
+        return tool_doc
+
+    async def update(self, relation: Tool) -> ToolDocument:
+        tool_doc = await self.get_by_name(relation.name)
+        logger.info(f"Got rel by name {tool_doc}")
+        
+        if not tool_doc:
+            raise ValueError("Relation not found in Elasticsearch")
+
+        updated_doc = ToolDocument.model_validate(relation)
+        await self.es_client.index(
+            index=self.index,
+            id=tool_doc[0]._id,
+            document=updated_doc.to_es()
+        )
+        return updated_doc
+
+    async def delete(self, name: str) -> None:
+        tool_doc = await self.get_by_name(name)
+        if not tool_doc:
+            raise ValueError("Relation not found in Elasticsearch")
+        try:
+            await self.es_client.delete(index=self.index, id=tool_doc[0]._id)
+        except Exception:
+            pass
+
+    async def commit(self):
+        try:
+            await self.es_client.indices.refresh(index=self.index)
+        except Exception:
+            pass
+
+
+     
