@@ -6,27 +6,30 @@ T = TypeVar("T", bound="ESDocument")
 
 
 class ESDocument(BaseModel):
-    id: str | None = Field(default=None, description="Elasticsearch _id")
+    id_doc: str | None = Field(default=None, alias="_id")
 
     class Config:
         from_attributes = True
+        populate_by_name = True
+
+    @property
+    def _id(self) -> str | None:
+        return self.id_doc
 
     def to_es(self) -> Dict[str, Any]:
-        data = self.model_dump(exclude_none=True)
-        data.pop("id", None)
+        data = self.model_dump(exclude_none=True, exclude={"id_doc"})
         return data
 
     def to_es_action(self, index: str) -> Dict[str, Any]:
         return {
             "_index": index,
-            "_id": self.id,
             "_source": self.to_es(),
         }
 
     @classmethod
     def from_es(cls: Type[T], hit: Dict[str, Any]) -> T:
         source = hit.get("_source", {})
-        return cls(id=hit.get("_id"), **source)
+        return cls(_id=hit.get("_id"), **source)
     
 class StitchTypeDocument(ESDocument):
     name: str

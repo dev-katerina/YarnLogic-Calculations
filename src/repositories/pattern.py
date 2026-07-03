@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from elasticsearch import AsyncElasticsearch
@@ -10,10 +9,14 @@ from sqlalchemy import UUID
 from models.postgres import Pattern
 from models.es_models import PatternDocument
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class PatternRepository(ABC):
     @abstractmethod
-    async def get_all(self) -> List[Pattern]:
+    async def get_all(self) -> list[Pattern]:
         pass
 
     @abstractmethod
@@ -21,7 +24,7 @@ class PatternRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_by_name(self, name: str) -> List[Pattern]|None:
+    async def get_by_name(self, name: str) -> list[Pattern]|None:
         pass
 
     @abstractmethod
@@ -44,7 +47,7 @@ class PatternRepositoryPostgres(PatternRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all(self) -> List[Pattern]:
+    async def get_all(self) -> list[Pattern]:
         result = await self.db.execute(select(Pattern))
         return result.scalars().all()
 
@@ -56,7 +59,7 @@ class PatternRepositoryPostgres(PatternRepository):
         return result.scalar_one_or_none()
 
 
-    async def get_by_name(self, name: str) -> List[Pattern]|None:
+    async def get_by_name(self, name: str) -> list[Pattern]|None:
         result = await self.db.execute(
             select(Pattern).where(Pattern.name == name)
         )
@@ -90,9 +93,9 @@ class PatternRepositoryPostgres(PatternRepository):
 class PatternRepositoryElastic(PatternRepository):
     def __init__(self, db: AsyncElasticsearch):
         self.db = db
-        self.index = "patterns"
+        self.index = "graphs"
 
-    async def get_all(self) -> List[PatternDocument]:
+    async def get_all(self) -> list[PatternDocument]:
         res = await self.db.search(index=self.index)
 
         return [
@@ -101,21 +104,20 @@ class PatternRepositoryElastic(PatternRepository):
         ]
 
     async def get_by_id(self, pattern_id: UUID) -> PatternDocument | None:
-        resp = await self.db.search(
+        res = await self.db.search(
             index=self.index,
-            body={
-                "query": {
-                    "term": {
-                        "id": pattern_id  # ищем по полю id
-                    }
+            query={
+                "term": {
+                    "id": str(pattern_id)  # Преобразуем UUID в строку
                 }
             }
         )
-        for hit in resp['hits']['hits']:
-            return PatternDocument.from_es(hit)
-        return None
+        hits = res["hits"]["hits"]
+        if not hits:
+            return None
+        return PatternDocument.from_es(hits[0])
     
-    async def get_by_name(self, name: str) -> List[PatternDocument] | None:
+    async def get_by_name(self, name: str) -> list[PatternDocument] | None:
         res = await self.db.search(
             index=self.index,
             body={
@@ -138,24 +140,33 @@ class PatternRepositoryElastic(PatternRepository):
         pattern_doc = PatternDocument(id=pattern.id, name=pattern.name)
         await self.db.index(
             index=self.index,
-            id=str(pattern_doc.id),
             document=pattern_doc.to_es()
         )
+        logger.info(f"Created pattern {pattern_doc}")
         return pattern_doc
 
     async def update(self, pattern: Pattern) -> PatternDocument:
-        pattern_doc = PatternDocument(id=pattern.id, name=pattern.name)
+        pattern_doc = await self.get_by_id(pattern.id)
+        if not pattern_doc:
+            raise ValueError("Pattern not found in Elasticsearch")
+        
+        pattern_changed = PatternDocument.model_validate(pattern)
+
         await self.db.update(
             index=self.index,
-            id=str(pattern_doc.id),
-            doc=pattern_doc.to_es()
+            id=str(pattern_doc._id),
+            doc=pattern_changed.to_es()
         )
         return pattern_doc
 
     async def delete(self, pattern_id: UUID):
+        pattern_doc = await self.get_by_id(pattern_id)
+        if not pattern_doc:
+            raise ValueError("Pattern not found in Elasticsearch")
+        
         await self.db.delete(
             index=self.index,
-            id=str(pattern_id)
+            id=str(pattern_doc._id)
         )
 
     async def commit(self):
